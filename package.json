@@ -1,6 +1,6 @@
 {
   "name": "@maksymshypytsia/flags-sdk",
-  "version": "0.1.0",
+  "version": "0.1.1",
   "description": "Tiny client SDK for feature-flags-saas: one fetch, local evaluation.",
   "type": "module",
   "main": "./dist/index.js",
