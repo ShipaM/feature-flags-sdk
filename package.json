@@ -32,7 +32,10 @@
   "keywords": [
     "feature-flags",
     "feature-toggles",
-    "sdk"
+    "feature-flag",
+    "rollout",
+    "sdk",
+    "typescript"
   ],
   "license": "MIT",
   "repository": {
@@ -43,5 +46,10 @@
     "@types/node": "^22.20.5",
     "typescript": "^5",
     "vitest": "^5.0.5"
-  }
+  },
+  "homepage": "https://github.com/ShipaM/feature-flags-sdk#readme",
+  "bugs": {
+    "url": "https://github.com/ShipaM/feature-flags-sdk/issues"
+  },
+  "author": "Maksym Shypytsia"
 }
