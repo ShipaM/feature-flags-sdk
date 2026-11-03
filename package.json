@@ -1,0 +1,47 @@
+{
+  "name": "@maksymshypytsia/flags-sdk",
+  "version": "0.1.0",
+  "description": "Tiny client SDK for feature-flags-saas: one fetch, local evaluation.",
+  "type": "module",
+  "main": "./dist/index.js",
+  "types": "./dist/index.d.ts",
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "import": "./dist/index.js"
+    }
+  },
+  "files": [
+    "dist"
+  ],
+  "sideEffects": false,
+  "engines": {
+    "node": ">=18"
+  },
+  "publishConfig": {
+    "access": "public"
+  },
+  "scripts": {
+    "prebuild": "node -e \"require('fs').rmSync('dist',{recursive:true,force:true})\"",
+    "build": "tsc -p tsconfig.build.json",
+    "typecheck": "tsc --noEmit",
+    "test": "vitest run",
+    "prepare": "npm run build",
+    "prepublishOnly": "npm run typecheck && npm test"
+  },
+  "keywords": [
+    "feature-flags",
+    "feature-toggles",
+    "sdk"
+  ],
+  "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/ShipaM/feature-flags-sdk.git"
+  },
+  "devDependencies": {
+    "@types/node": "^22.20.5",
+    "typescript": "^5",
+    "vitest": "^5.0.5"
+  }
+}
