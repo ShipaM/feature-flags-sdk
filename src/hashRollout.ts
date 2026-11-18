@@ -5,7 +5,7 @@ const FNV_PRIME = 0x01000193; // FNV-1a multiplication constant.
 
 const encoder = new TextEncoder();
 
-/** Fast, non-cryptographic hash. Returns a number from 0 to 2^32 - 1. */
+// Fast, non-cryptographic hash. Returns a number from 0 to 2^32 - 1.
 export function fnv1a(input: string): number {
   let hash = FNV_OFFSET_BASIS;
 
@@ -18,13 +18,13 @@ export function fnv1a(input: string): number {
   return hash >>> 0; // Convert the result to an unsigned 32-bit number.
 }
 
-/** Get a user's bucket from 0 to 99 for a specific flag. */
+// Get a user's bucket from 0 to 99 for a specific flag.
 export function getBucket(userKey: string, flagKey: string): number {
   // Combine user and flag so each flag gets its own rollout.
   return fnv1a(`${userKey}:${flagKey}`) % 100;
 }
 
-/** Check if a flag is enabled for a user at the given rollout percentage. */
+// Check if a flag is enabled for a user at the given rollout percentage.
 export function isEnabledForUser(
   userKey: string,
   flagKey: string,

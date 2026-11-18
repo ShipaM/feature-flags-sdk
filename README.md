@@ -77,7 +77,7 @@ export async function handler(userId: string) {
 ```
 
 Calling `getFlags` for many users is cheap: the network request happens only
-once per `baseUrl` + `apiKey`, every other call reuses the cached data
+once per `baseUrl` + `apiKey` + `timeoutMs`, every other call reuses the cached data
 (parallel calls share the same request).
 
 ### Refresh the flags
@@ -90,6 +90,27 @@ import { clearCache, getFlags } from "@maksymshypytsia/flags-sdk";
 clearCache(); // forget what we have
 const flags = await getFlags({ apiKey, userKey, baseUrl }); // fetches again
 ```
+
+### Safety rules: what happens when something is wrong
+
+The SDK is **fail closed**: when it is not sure, a flag is **off**.
+
+| Situation | Result |
+| --- | --- |
+| Flag does not exist or is switched off | `isEnabled()` returns `false` |
+| Flag data is broken (`enabled` is not a boolean, `rollout` is not an integer from 0 to 100, entry is not an object) | `isEnabled()` returns `false` |
+| The service answers 401, 429 or 503, or the network is down | `getFlags()` throws (the failure is not cached) |
+| The service does not answer within `timeoutMs` (default 5000 ms) | `getFlags()` throws |
+
+Keep your app safe when flags cannot be loaded:
+
+```ts
+const ALL_OFF = { isEnabled: () => false };
+
+const flags = await getFlags({ apiKey, userKey, baseUrl }).catch(() => ALL_OFF);
+```
+
+In production always use an `https://` `baseUrl`.
 
 ### Error handling
 
@@ -113,8 +134,9 @@ A sensible pattern is to treat "could not load flags" as "all flags off".
 | `apiKey`  | `string` | Project API key. Sent as `Authorization: Bearer <key>` |
 | `userKey` | `string` | Stable id of the end user                              |
 | `baseUrl` | `string` | Service URL. A trailing `/` is ignored                 |
+| `timeoutMs` | `number` | Optional. Give up after this many ms (default 5000)    |
 
-Throws `TypeError` if an option is empty, and `Error` if the request fails
+Throws `TypeError` if an option is empty or `timeoutMs` is not a positive integer, and `Error` if the request fails
 or the response has an unexpected shape.
 
 ### `client.isEnabled(flagKey): boolean`

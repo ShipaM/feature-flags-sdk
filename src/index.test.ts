@@ -92,7 +92,9 @@ describe("getFlags", () => {
       .fn()
       .mockResolvedValueOnce(new Response("boom", { status: 500 }))
       .mockResolvedValueOnce(
-        Response.json({ flags: { "dark-mode": { enabled: true, rollout: 100 } } }),
+        Response.json({
+          flags: { "dark-mode": { enabled: true, rollout: 100 } },
+        }),
       );
     vi.stubGlobal("fetch", fetchMock);
     const opts = { apiKey: API_KEY, userKey: "user-1", baseUrl: BASE_URL };
@@ -121,4 +123,74 @@ describe("getFlags", () => {
     });
     expect(fetchMock.mock.calls[0][0]).toBe("http://flags.test/api/v1/flags");
   });
+});
+
+describe("fail closed: invalid flag data is treated as disabled", () => {
+  const bad: Record<string, unknown> = {
+    "string-false": { enabled: "false", rollout: 100 },
+    "string-true": { enabled: "true", rollout: 100 },
+    "rollout-150": { enabled: true, rollout: 150 },
+    "rollout-negative": { enabled: true, rollout: -5 },
+    "rollout-float": { enabled: true, rollout: 99.5 },
+    "rollout-string": { enabled: true, rollout: "100" },
+    "rollout-missing": { enabled: true },
+    "null-entry": null,
+    "string-entry": "oops",
+  };
+  const load = async (flags: Record<string, unknown>) => {
+    vi.stubGlobal(
+      "fetch",
+      vi.fn(async () => Response.json({ flags })),
+    );
+    return getFlags({ apiKey: API_KEY, userKey: "user-1", baseUrl: BASE_URL });
+  };
+
+  it.each(Object.keys(bad))("%s -> false", async (key) => {
+    const flags = await load(bad);
+    expect(flags.isEnabled(key)).toBe(false);
+  });
+  it("a valid flag next to invalid ones still works", async () => {
+    const flags = await load({ ...bad, ok: { enabled: true, rollout: 100 } });
+    expect(flags.isEnabled("ok")).toBe(true);
+  });
+});
+
+describe("request timeout", () => {
+  it("rejects when the server hangs longer than timeoutMs, and does not cache the failure", async () => {
+    const hanging = vi.fn(
+      (_url: string, init?: RequestInit) =>
+        new Promise<Response>((_resolve, reject) => {
+          init?.signal?.addEventListener("abort", () =>
+            reject(init.signal?.reason),
+          );
+        }),
+    );
+    vi.stubGlobal("fetch", hanging);
+    await expect(
+      getFlags({
+        apiKey: API_KEY,
+        userKey: "user-1",
+        baseUrl: BASE_URL,
+        timeoutMs: 50,
+      }),
+    ).rejects.toThrow("Failed to load flags: timed out after 50 ms");
+    // next call tries again (a failed request is never cached)
+    mockFetch();
+    const flags = await getFlags({
+      apiKey: API_KEY,
+      userKey: "user-1",
+      baseUrl: BASE_URL,
+    });
+    expect(flags.isEnabled("dark-mode")).toBe(true);
+  });
+
+  it.each([0, -1, 1.5, NaN, Infinity, 2_147_483_648])(
+    "rejects timeoutMs = %s with a TypeError",
+    async (timeoutMs) => {
+      mockFetch();
+      await expect(
+        getFlags({ apiKey: API_KEY, userKey: "user-1", baseUrl: BASE_URL, timeoutMs }),
+      ).rejects.toThrow(TypeError);
+    },
+  );
 });
